@@ -14,6 +14,7 @@
             --success: #22c55e;
             --danger: #ef4444;
             --info: #3b82f6;
+            --farm: #10b981;
         }
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -48,30 +49,27 @@
             flex-direction: column;
             align-items: center; 
             justify-content: center; 
-            font-size: 0.6rem; 
+            font-size: 0.55rem; 
             transition: all 0.3s; 
             border: 2px solid transparent;
-            position: relative;
         }
-        .plot:hover { transform: translateY(-5px); border-color: var(--primary); }
-        .plot.owned { background-color: var(--info); border-color: #2563eb; }
+        .plot:hover { transform: translateY(-3px); border-color: var(--primary); }
+        .plot.owned { background-color: var(--info); }
         .plot.has-house { background-color: #1e3a8a; }
-        .plot i { font-size: 1.2rem; margin-bottom: 4px; }
+        .plot.has-cow { background-color: #065f46; border-color: var(--farm); }
+        .plot i { font-size: 1rem; margin-bottom: 2px; }
         
         .status-bar { width: 100%; max-width: 450px; margin: 10px 0; font-size: 0.8rem; display: flex; justify-content: space-between; color: #94a3b8; }
-
         .btn-work { width: 100%; max-width: 450px; background: linear-gradient(45deg, #ffd700, #ffa500); color: #000; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
-        .btn-work:active { transform: scale(0.98); }
 
-        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); padding: 25px; border: 2px solid var(--primary); border-radius: 15px; z-index: 100; text-align: center; box-shadow: 0 0 30px rgba(0,0,0,0.5); width: 280px; }
-        .modal-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card-bg); padding: 25px; border: 2px solid var(--primary); border-radius: 15px; z-index: 100; text-align: center; width: 280px; }
+        .modal-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 15px; }
         .btn-action { border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; width: 100%; }
     </style>
 </head>
 <body>
 <header>
     <div class="coin-balance"><i class="fa-solid fa-coins"></i> <span id="city-coins">0</span> CC</div>
-    <div class="coin-balance"><i class="fa-brands fa-bitcoin"></i> <span id="ltc-val">0.000</span> LTC</div>
     <div class="coin-balance"><i class="fa-solid fa-house-lock"></i> <span id="rent-val">0</span>/min</div>
 </header>
 <div id="game-container">
@@ -88,10 +86,7 @@
 
 <div id="modal">
     <h3 id="modal-title">Lote</h3>
-    <p id="modal-desc">O que deseja fazer?</p>
-    <div class="modal-btns" id="modal-actions">
-        <!-- Dinâmico -->
-    </div>
+    <div class="modal-btns" id="modal-actions"></div>
     <button onclick="closeModal()" style="background: none; color: #94a3b8; border: none; margin-top: 15px; cursor: pointer;">CANCELAR</button>
 </div>
 
@@ -104,9 +99,8 @@
     const modalActions = document.getElementById('modal-actions');
     let plotsData = {};
 
-    // Inicializa dados dos 25 lotes
     for(let i=1; i<=25; i++) {
-        plotsData[i] = { owned: false, hasHouse: false, price: 500, housePrice: 1500 };
+        plotsData[i] = { owned: false, hasHouse: false, hasCow: false, price: 500, housePrice: 1500, cowPrice: 800 };
         let plot = document.createElement('div');
         plot.className = 'plot';
         plot.id = 'plot-' + i;
@@ -115,21 +109,17 @@
         map.appendChild(plot);
     }
 
-    // Sistema de Aluguel Automático (Renda Passiva)
     setInterval(() => {
         if(rentPerMinute > 0) {
-            coins += rentPerMinute / 60; // Ganha uma fração a cada segundo
+            coins += rentPerMinute / 60;
             document.getElementById('city-coins').innerText = Math.floor(coins);
         }
     }, 1000);
 
     function work() {
-        // COLOQUE SEU LINK DO ADSTERRA ABAIXO
-        // window.open('SEU_LINK_AQUI', '_blank'); 
-        
         coins += 100;
         document.getElementById('city-coins').innerText = Math.floor(coins);
-        alert("Ótimo trabalho! Você recebeu 100 City Coins.");
+        alert("Você trabalhou e recebeu 100 City Coins.");
     }
 
     function showPlotInfo(id) {
@@ -140,10 +130,15 @@
         let html = '';
         if(!data.owned) {
             html = `<button onclick="buyPlot(${id})" class="btn-action" style="background: var(--success)">COMPRAR TERRENO (500 CC)</button>`;
-        } else if(!data.hasHouse) {
-            html = `<button onclick="buildHouse(${id})" class="btn-action" style="background: var(--info)">CONSTRUIR CASA (1500 CC)</button>`;
         } else {
-            html = `<p style="color: var(--success)">🏠 Gerando aluguel: 10 CC/min</p>`;
+            if(!data.hasHouse) {
+                html += `<button onclick="buildHouse(${id})" class="btn-action" style="background: var(--info)">CONSTRUIR CASA (1500 CC)</button>`;
+            }
+            if(!data.hasCow) {
+                html += `<button onclick="buyCow(${id})" class="btn-action" style="background: var(--farm)">COMPRAR GADO (800 CC)</button>`;
+            }
+            if(data.hasHouse) html += `<p style="color: var(--info)">🏠 Aluguel: +10 CC/min</p>`;
+            if(data.hasCow) html += `<p style="color: var(--farm)">🐄 Produção: +5 CC/min</p>`;
         }
         modalActions.innerHTML = html;
     }
@@ -160,6 +155,16 @@
         } else { alert("Saldo insuficiente!"); }
     }
 
+    function buyCow(id) {
+        if(coins >= plotsData[id].cowPrice) {
+            coins -= plotsData[id].cowPrice;
+            plotsData[id].hasCow = true;
+            rentPerMinute += 5;
+            updateUI(id);
+            closeModal();
+        } else { alert("Saldo insuficiente!"); }
+    }
+
     function buildHouse(id) {
         if(coins >= plotsData[id].housePrice) {
             coins -= plotsData[id].housePrice;
@@ -167,7 +172,7 @@
             rentPerMinute += 10;
             updateUI(id);
             closeModal();
-        } else { alert("Saldo insuficiente para construir!"); }
+        } else { alert("Saldo insuficiente!"); }
     }
 
     function updateUI(id) {
@@ -176,9 +181,19 @@
         document.getElementById('owned-count').innerText = "Terrenos: " + ownedPlots;
         
         const plotEl = document.getElementById('plot-' + id);
-        if(plotsData[id].hasHouse) {
+        let icons = '';
+        if(plotsData[id].hasHouse) icons += `<i class="fa-solid fa-house-chimney"></i>`;
+        if(plotsData[id].hasCow) icons += `<i class="fa-solid fa-cow"></i>`;
+        
+        if(plotsData[id].hasHouse && plotsData[id].hasCow) {
+            plotEl.className = 'plot owned has-house has-cow';
+            plotEl.innerHTML = icons + `<span>FAZENDA</span>`;
+        } else if(plotsData[id].hasHouse) {
             plotEl.className = 'plot owned has-house';
-            plotEl.innerHTML = `<i class="fa-solid fa-house-chimney"></i><span>CASA</span>`;
+            plotEl.innerHTML = icons + `<span>CASA</span>`;
+        } else if(plotsData[id].hasCow) {
+            plotEl.className = 'plot owned has-cow';
+            plotEl.innerHTML = icons + `<span>GADO</span>`;
         } else if(plotsData[id].owned) {
             plotEl.className = 'plot owned';
             plotEl.innerHTML = `<i class="fa-solid fa-hand-holding-dollar"></i><span>SEU</span>`;
